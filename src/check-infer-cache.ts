@@ -1,8 +1,13 @@
-import { MongoClient, Db, Collection } from 'mongodb';
+import { MongoClient, Db, Collection, Timestamp } from 'mongodb';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
 
+dotenv.config();
 // MongoDB connection URI
-const uri = 'mongodb://mongo:AQxXJzLKsipZQAfRwaaAHwhoUUByeNWn@viaduct.proxy.rlwy.net:37789';
+const uri = process.env['MONGODB_URI'];
+if (!uri) {
+    throw new Error("The environment variable MONGODB_URI is required.")
+}
 const client = new MongoClient(uri);
 
 interface InferenceCache {
@@ -12,14 +17,14 @@ interface InferenceCache {
     prompt_id: string;
     model: string;
     service: string;
-    inferred_at: Date;
-    created_at: Date;
+    inferred_at: number;
+    created_at: number;
 }
 
 interface Prompt {
     _id: string;
     content: string;
-    created_at: Date;
+    created_at: number;
 }
 
 let db: Db;
@@ -28,7 +33,7 @@ let promptCollection: Collection<Prompt>;
 
 async function initializeDb() {
     await client.connect();
-    db = client.db('test');
+    db = client.db(process.env['MONGODB_DB']);
     
     inferenceCacheCollection = db.collection<InferenceCache>('inference_cache');
     promptCollection = db.collection<Prompt>('prompt');
@@ -49,13 +54,13 @@ function sha256(data: string): string {
 async function checkAndCache(input: string, output: string, promptContent: string, service: string, model: string): Promise<boolean> {
     const promptId = sha256(promptContent);
     const _id = sha256(`${input}_${promptId}_${service}_${model}`);
-
     const existingPrompt = await promptCollection.findOne({ _id: promptId });
+    const currentTimestamp = Math.floor(Date.now() / 1000);
     if (!existingPrompt) {
         await promptCollection.insertOne({
             _id: promptId,
             content: promptContent,
-            created_at: new Date(),
+            created_at: currentTimestamp,
         });
     }
 
@@ -70,8 +75,8 @@ async function checkAndCache(input: string, output: string, promptContent: strin
             prompt_id: promptId,
             model,
             service,
-            inferred_at: new Date(),
-            created_at: new Date(),
+            inferred_at: currentTimestamp,
+            created_at: currentTimestamp,
         });
         return false;
     }
