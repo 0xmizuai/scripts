@@ -15,26 +15,6 @@ export function getPublicClient() {
   return publicClient;
 }
 
-export function getTestWalletClient() {
-  const rpc = process.env.RPC_URL as string;
-
-  const testSeed = process.env.TEST_SEED as string;
-  const testPrivateKey = process.env.TEST_PRIVATE_KEY as `0x${string}`;
-
-  const account = testSeed
-    ? mnemonicToAccount(process.env.TEST_SEED as string)
-    : privateKeyToAccount(testPrivateKey);
-
-  const walletClient = createWalletClient({
-    account,
-    chain: holesky,
-    transport: http(rpc),
-  });
-
-  return walletClient;
-}
-
-
 export function getTestAccountAddress() {
   const testSeed = process.env.TEST_SEED as string;
   const testPrivateKey = process.env.TEST_PRIVATE_KEY as `0x${string}`;

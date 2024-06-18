@@ -1,4 +1,4 @@
-import { keccak256, toBytes, toHex, type Address, type Hex, getAddress } from 'viem';
+import { keccak256, toBytes, toHex, type Address, type Hex } from 'viem';
 import { contractAddress } from './address';
 import { getKmsWalletClinet, getPublicClient, getTestAccountAddress } from './client';
 import {
@@ -6,6 +6,9 @@ import {
   calldataInitData,
   calldataPredictAddress,
 } from './contract';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export const createNewRepo = async (title: string, description: string, validationRule: string[]) => {
   const stringified = JSON.stringify({ title, description, validationRules: validationRule });
@@ -15,7 +18,7 @@ export const createNewRepo = async (title: string, description: string, validati
   const publicClient = getPublicClient();
 
   const initData = calldataInitData(
-    getTestAccountAddress(),
+    process.env.DATA_REPO_OWNER as Address,
     metadataHash,
     contractAddress.MizuPoints as Address,
     1000n
@@ -39,7 +42,7 @@ export const createNewRepo = async (title: string, description: string, validati
   console.log("SENDING TX")
 
   console.log(await publicClient.getBalance({
-    address: "0x0069f8e371b71f7996523c22bae7ea221666f06c",
+    address: process.env.DATA_REPO_OWNER as Address,
   }))
 
   const serializedTrasanction = await walletClient.signTransaction(req);

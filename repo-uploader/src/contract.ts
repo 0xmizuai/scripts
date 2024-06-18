@@ -66,3 +66,11 @@ export function calldataGetNonce() {
     functionName: "getNonce",
   });
 }
+
+export function calldataSetMetadata(newMetadata: Hex) {
+  return encodeFunctionData({
+    abi: dataRepoAbi,
+    functionName: "setMetadata",
+    args: [newMetadata],
+  });
+}
