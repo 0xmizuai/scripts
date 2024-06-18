@@ -11,12 +11,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const createNewRepo = async (title: string, description: string, validationRule: string[]) => {
-  const stringified = JSON.stringify({ title, description, validationRules: validationRule });
-  const metadataHash = keccak256(toBytes(stringified));
+  // const stringified = JSON.stringify({ title, description, validationRules: validationRule });
+  // const metadataHash = keccak256(toBytes(stringified));
 
   const walletClient = await getKmsWalletClinet();
   const publicClient = getPublicClient();
 
+  const timestamp = Math.floor(Date.now() / 1000);
+  const timestampHex = timestamp.toString(16).padStart(16, '0');
+  let metadataHash: `0x${string}` = `0x${'0'.repeat(48)}${timestampHex}`;
+  console.log('Generated metadataHash:', metadataHash);
+  
   const initData = calldataInitData(
     process.env.DATA_REPO_OWNER as Address,
     metadataHash,
