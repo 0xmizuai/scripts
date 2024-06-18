@@ -1,4 +1,4 @@
-import { createNewRepo } from './utils/repo';
+import { createNewRepo } from './createrepo';
 
 const main = async () => {
   const title = 'Customer Support Agent Conversations2';

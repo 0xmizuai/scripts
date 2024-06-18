@@ -16,6 +16,7 @@
     "ethers": "^6.13.0",
     "mongodb": "^6.7.0",
     "openai": "^4.51.0",
-    "superagent": "^9.0.2"
+    "superagent": "^9.0.2",
+    "viem": "^2.15.1"
   }
 }
