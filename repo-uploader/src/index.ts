@@ -1,8 +1,9 @@
 import { createNewRepo } from './create-repo';
+import { createNewRepoBatch } from './create-repo-batch';
 import { setMetadata } from './set-metadata';
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { sleep } from './utils';
+
+
 const main = async () => {
   // const title = 'Customer Support Agent Conversations2';
   // const description = 'This is a sample data repo for customer support agent conversations';
@@ -12,7 +13,7 @@ const main = async () => {
   //   'the customer is slightly aggressive',
   // ];
 
-  for (let i = 302; i <= 1442; i++) {
+  for (let i = 1; i <= 1444; i++) {
     try {
       await createNewRepo();
       console.log(`Repo ${i} created successfully`);
