@@ -2,6 +2,7 @@ import {
   encodeFunctionData,
   keccak256,
   parseAbi,
+  toBytes,
   type Address,
   type Hex,
 } from "viem";
@@ -43,7 +44,8 @@ export function calldataInitData(
 }
 
 export function calldataPredictAddress(initData: Hex) {
-  const salt = keccak256(initData);
+  //using timestamp as salt
+  const salt = keccak256(toBytes(new Date().toISOString()));
   return encodeFunctionData({
     abi: contractFactoryAbi,
     functionName: "predictClonedAddress",
@@ -52,7 +54,8 @@ export function calldataPredictAddress(initData: Hex) {
 }
 
 export function calldataClone(initData: Hex) {
-  const salt = keccak256(initData);
+  //using timestamp as salt
+  const salt = keccak256(toBytes(new Date().toISOString()));
   return encodeFunctionData({
     abi: contractFactoryAbi,
     functionName: "clone",

@@ -10,21 +10,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const createNewRepo = async (title: string, description: string, validationRule: string[]) => {
+export const createNewRepo = async () => {
   // const stringified = JSON.stringify({ title, description, validationRules: validationRule });
   // const metadataHash = keccak256(toBytes(stringified));
 
   const walletClient = await getKmsWalletClinet();
   const publicClient = getPublicClient();
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  const timestampHex = timestamp.toString(16).padStart(16, '0');
-  let metadataHash: `0x${string}` = `0x${'0'.repeat(48)}${timestampHex}`;
-  console.log('Generated metadataHash:', metadataHash);
+  let metadata: `0x${string}` = `0x${'0'.repeat(64)}`;
+  console.log('Generated metadataHash:', metadata);
   
   const initData = calldataInitData(
     process.env.DATA_REPO_OWNER as Address,
-    metadataHash,
+    metadata,
     contractAddress.MizuPoints as Address,
     1000n
   );
@@ -44,9 +42,7 @@ export const createNewRepo = async (title: string, description: string, validati
     value: 0n,
   });
 
-  console.log("SENDING TX")
-
-  console.log(await publicClient.getBalance({
+  console.log("Balance: " + await publicClient.getBalance({
     address: process.env.DATA_REPO_OWNER as Address,
   }))
 
@@ -55,9 +51,7 @@ export const createNewRepo = async (title: string, description: string, validati
     serializedTransaction: serializedTrasanction
   });
 
-  console.log(repoAddress);
   console.log("tx_hash", txHash);
-
   return txHash;
 };
 
