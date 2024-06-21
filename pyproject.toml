@@ -6,8 +6,17 @@ authors = ["shudong <dongs2011@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.9"
+requests = "^2.32.3"
+scikit-learn = "^1.5.0"
 
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.2"
+coverage = "^7.5.3"
+
+[tool.poe.tasks]
+test = "pytest --cov=mizu" # a simple command task
+serve.script = "mizu.service:run(debug=True)" # python script based task
 
 [build-system]
 requires = ["poetry-core"]
