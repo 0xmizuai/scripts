@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mizu-scripts"
+name = "mizuscripts"
 version = "0.1.0"
 description = ""
 authors = ["shudong <dongs2011@gmail.com>"]
@@ -14,9 +14,11 @@ scikit-learn = "^1.5.0"
 pytest = "^8.2.2"
 coverage = "^7.5.3"
 
+[tool.poetry.group.dev.dependencies]
+poethepoet = "^0.26.1"
+
 [tool.poe.tasks]
-test = "pytest --cov=mizu" # a simple command task
-serve.script = "mizu.service:run(debug=True)" # python script based task
+cli.script = "mizuscripts.cli:main" # python script based task
 
 [build-system]
 requires = ["poetry-core"]
