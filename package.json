@@ -1,12 +1,22 @@
 {
   "devDependencies": {
+    "@types/superagent": "^8.1.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   },
+  "scripts": {
+    "start-upload": "ts-node repo-uploader/src/index.ts"
+  },
   "dependencies": {
+    "asn1.js": "^5.4.1",
+    "aws-sdk": "^2.1643.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
+    "elliptic": "^6.5.5",
+    "ethers": "^6.13.0",
     "mongodb": "^6.7.0",
-    "openai": "^4.51.0"
+    "openai": "^4.51.0",
+    "superagent": "^9.0.2",
+    "viem": "^2.15.1"
   }
 }
