@@ -54,8 +54,7 @@ export function calldataInitData(
 }
 
 export function calldataPredictAddress(initData: Hex) {
-  //using timestamp as salt
-  const salt = keccak256(toBytes(new Date().toISOString()));
+  const salt = keccak256(initData);
   return encodeFunctionData({
     abi: contractFactoryAbi,
     functionName: "predictClonedAddress",
@@ -64,8 +63,7 @@ export function calldataPredictAddress(initData: Hex) {
 }
 
 export function calldataClone(initData: Hex) {
-  //using timestamp as salt
-  const salt = keccak256(toBytes(new Date().toISOString()));
+  const salt = keccak256(initData);
   return encodeFunctionData({
     abi: contractFactoryAbi,
     functionName: "clone",

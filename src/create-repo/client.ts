@@ -1,9 +1,8 @@
-import { Address, createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction, toBytes, toHex } from "viem";
-import { mnemonicToAccount, privateKeyToAccount, signTransaction, toAccount } from "viem/accounts";
+import { Address, createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction } from "viem";
+import { mnemonicToAccount, privateKeyToAccount, toAccount } from "viem/accounts";
 import { holesky } from "viem/chains";
 import { serverHosts } from "./host";
 import superagent from "superagent";
-
 
 export function getPublicClient() {
   const rpc = process.env.RPC_URL as string;
@@ -32,7 +31,7 @@ export async function getKmsWalletClinet() {
 
   const account = toAccount({
     address: ownerAddress as Address,
-    async signMessage({ message }) {
+    async signMessage(_) {
       console.log("ERROR")
 
       return '0x00'
@@ -51,8 +50,8 @@ export async function getKmsWalletClinet() {
 
       return serializeTransaction(transaction, parseSignature(`0x${sig as string}`));
     },
-    async signTypedData(typedData) {
-      console.log("ERROR")
+    async signTypedData(_) { 
+      console.log("ERROR"); 
       return '0x00'
     },
   });
