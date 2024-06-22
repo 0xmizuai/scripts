@@ -1,4 +1,4 @@
-import { createNewRepo } from './create-repo';
+import { createEmptyNewRepo } from './create-repo';
 import { setMetadata } from './set-metadata';
 
 const main = async () => {
@@ -10,7 +10,8 @@ const main = async () => {
     'the customer is slightly aggressive',
   ];
 
-  await createNewRepo(title, description, validationRule);
+  await createEmptyNewRepo(2619 + 300);
+  // await createNewRepo(title, description, validationRule);
   // await setMetadata("0x75A92140F1B8943c3c0E0d0c9190762129f84F93", "new metadata");
 };
 

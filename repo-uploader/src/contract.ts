@@ -29,6 +29,16 @@ export const contractFactoryAbi = parseAbi([
   "function predictClonedAddress(bytes32 salt) external view returns (address)",
 ]);
 
+export const multicall3Abi = parseAbi([
+  "struct Call { address target; bytes callData; }",
+  "function aggregate(Call[] calldata calls) public payable returns (uint256 blockNumber, bytes[] memory returnData)"
+]);
+
+export interface ICall {
+  target: Address,
+  callData: Hex,
+}
+
 export function calldataInitData(
   owner: Address,
   metadataHash: Hex,
@@ -72,5 +82,13 @@ export function calldataSetMetadata(newMetadata: Hex) {
     abi: dataRepoAbi,
     functionName: "setMetadata",
     args: [newMetadata],
+  });
+}
+
+export function calldataMulticall(calls: ICall[]) {
+  return encodeFunctionData({
+    abi: multicall3Abi,
+    functionName: "aggregate",
+    args: [calls],
   });
 }

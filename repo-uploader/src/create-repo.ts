@@ -1,61 +1,44 @@
-import { keccak256, toBytes, toHex, type Address, type Hex } from 'viem';
+import { keccak256, PublicClient, toBytes, toHex, type Address, type Hex } from 'viem';
 import { contractAddress } from './address';
 import { getKmsWalletClinet, getPublicClient, getTestAccountAddress } from './client';
 import {
   calldataClone,
   calldataInitData,
+  calldataMulticall,
   calldataPredictAddress,
+  ICall,
 } from './contract';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-export const createNewRepo = async (title: string, description: string, validationRule: string[]) => {
-  // const stringified = JSON.stringify({ title, description, validationRules: validationRule });
-  // const metadataHash = keccak256(toBytes(stringified));
-
+export const createEmptyNewRepo = async (offset: number) => {
   const walletClient = await getKmsWalletClinet();
   const publicClient = getPublicClient();
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  const timestampHex = timestamp.toString(16).padStart(16, '0');
-  let metadataHash: `0x${string}` = `0x${'0'.repeat(48)}${timestampHex}`;
-  console.log('Generated metadataHash:', metadataHash);
-  
-  const initData = calldataInitData(
-    process.env.DATA_REPO_OWNER as Address,
-    metadataHash,
-    contractAddress.MizuPoints as Address,
-    1000n
-  );
-  const cloneCalldata = calldataClone(initData);
-  const predictAddressCalldata = calldataPredictAddress(initData);
+  let allCalls: ICall[] = []
+  for (let i = 0; i < 10; i ++) {
+    const metadataHash = generateMetadata(i + offset);
+    const initData = calldataInitData(
+      "0x0069f8e371b71f7996523c22bae7ea221666f06c" as Address,
+      metadataHash,
+      contractAddress.MizuPoints as Address,
+      0n
+    );
+    const cloneCalldata = calldataClone(initData);
+    allCalls.push({ target: contractAddress.ContractFactory as Address, callData: cloneCalldata })
+  }
 
-  const repoAddressData = await publicClient.call({
-    to: contractAddress.ContractFactory as Address,
-    data: predictAddressCalldata,
-  });
-  const repoAddress = toAddress(repoAddressData.data as Hex);
-  console.log({ repoAddress });
 
+  const multiCallData = calldataMulticall(allCalls);
   const req = await walletClient.prepareTransactionRequest({
-    to: contractAddress.ContractFactory as Address,
-    data: cloneCalldata,
+    to: contractAddress.Multicall3 as Address,
+    data: multiCallData,
     value: 0n,
   });
 
   console.log("SENDING TX")
-
-  console.log(await publicClient.getBalance({
-    address: process.env.DATA_REPO_OWNER as Address,
-  }))
-
   const serializedTrasanction = await walletClient.signTransaction(req);
   const txHash = await walletClient.sendRawTransaction({
     serializedTransaction: serializedTrasanction
   });
-
-  console.log(repoAddress);
   console.log("tx_hash", txHash);
 
   return txHash;
@@ -65,3 +48,24 @@ export const toAddress = (bytes: Hex) => {
   const b = toBytes(bytes);
   return toHex(b.slice(12));
 };
+
+
+export const predictAddress = async (
+  publicClient: PublicClient,
+  initData: Hex,
+) => {
+  const predictAddressCalldata = calldataPredictAddress(initData);
+
+  const repoAddressData = await publicClient.call({
+    to: contractAddress.ContractFactory as Address,
+    data: predictAddressCalldata,
+  });
+  const repoAddress = toAddress(repoAddressData.data as Hex);
+  console.log({ repoAddress });
+}
+
+export const generateMetadata = (source: number): Hex => {
+  const sourceHex = source.toString(16).padStart(16, '0');
+  let metadataHash: `0x${string}` = `0x${'0'.repeat(48)}${sourceHex}`;
+  return metadataHash;
+}
