@@ -40,7 +40,6 @@ export const createEmptyNewRepo = async (offset: number) => {
     serializedTransaction: serializedTrasanction
   });
   console.log("tx_hash", txHash);
-
   return txHash;
 };
 

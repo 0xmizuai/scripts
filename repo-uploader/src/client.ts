@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction, toBytes, toHex } from "viem";
+import { Address, createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction, toBytes, toHex } from "viem";
 import { mnemonicToAccount, privateKeyToAccount, signTransaction, toAccount } from "viem/accounts";
 import { holesky } from "viem/chains";
 import { serverHosts } from "./host";
@@ -28,13 +28,10 @@ export function getTestAccountAddress() {
 
 export async function getKmsWalletClinet() {
   const rpc = process.env.INFURA_RPC_URL;
-
-  const address = await superagent
-    .get(`${serverHosts.signer}/admin/address`)
-    .then((res) => JSON.parse(res.body.data).result);
+  const ownerAddress = process.env.DATA_REPO_OWNER;
 
   const account = toAccount({
-    address,
+    address: ownerAddress as Address,
     async signMessage({ message }) {
       console.log("ERROR")
 
@@ -48,7 +45,9 @@ export async function getKmsWalletClinet() {
         .send({
           data: txHash.substring(2),
         })
-        .then((res) => JSON.parse(res.body.data).result);
+        .then(
+          (res) => JSON.parse(res.body.data).result
+        );
 
       return serializeTransaction(transaction, parseSignature(`0x${sig as string}`));
     },
