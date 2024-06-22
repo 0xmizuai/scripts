@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "@types/superagent": "^8.1.7",
+    "bun-types": "^1.1.15",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   },
@@ -18,5 +19,8 @@
     "openai": "^4.51.0",
     "superagent": "^9.0.2",
     "viem": "^2.15.1"
-  }
+  },
+  "name": "scripts",
+  "module": "index.ts",
+  "type": "module"
 }

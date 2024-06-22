@@ -1,8 +1,12 @@
-import { Address, createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction } from "viem";
+import type {Address} from 'viem'
+
+import superagent from "superagent";
+
+import { createPublicClient, createWalletClient, http, keccak256, parseSignature, serializeTransaction } from "viem";
 import { mnemonicToAccount, privateKeyToAccount, toAccount } from "viem/accounts";
 import { holesky } from "viem/chains";
-import { serverHosts } from "./host";
-import superagent from "superagent";
+
+import { serverHosts } from "./config";
 
 export function getPublicClient() {
   const rpc = process.env.RPC_URL as string;
