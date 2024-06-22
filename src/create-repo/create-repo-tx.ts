@@ -1,6 +1,7 @@
+import fs from 'node:fs';
+
 import { encodeFunctionData, type Address, type Hex } from "viem";
 import { multicall3Abi, type ICall } from "./utils/contract";
-import fs from 'node:fs';
 import { getKmsWalletClinet, getPublicClient } from "./utils/client";
 import { contractAddress } from "./utils/config";
 
