@@ -1,10 +1,9 @@
 import boto3
 
-import hashlib
 import os
 from dotenv import load_dotenv
 
-from multiprocessing import concurrent
+from concurrent import futures
 
 load_dotenv()
 R2_BASE_URL = os.getenv('R2_BASE_URL')
@@ -22,16 +21,14 @@ s3 = boto3.client('s3',
   aws_secret_access_key = AWS_SECRET_ACCESS_KEY
 )
 
-def store_embedding(e: Embedding):
-    id = hashlib.sha256(e.text.encode()).hexdigest() + "-" + e.model
+def store(e: Embedding):
     s3.upload_fileobj(
         json.dumps(asdict(e)),
         R2_BUCKET_NAME,
-        '/category_embedding/{}'.format(id)
+        '/category_embedding/{}'.format(e.id)
     )
 
-BATCH_SIZE = 100
-def store_embeddings(es: list[Embedding]):
-    executor = concurrent.futures.ThreadPoolExecutor(BATCH_SIZE)
-    futures = [executor.submit(store_embedding, e) for e in es]
-    concurrent.futures.wait(futures)
+def store_multi(es: list[Embedding], batch_size: int = 100):
+    executor = futures.ThreadPoolExecutor(batch_size)
+    futures = [executor.submit(store, e) for e in es]
+    futures.wait(futures)
