@@ -1,3 +1,6 @@
+from dataclasses import asdict
+import json
+
 import chromadb
 import hashlib
 from openai import AsyncOpenAI
@@ -9,8 +12,6 @@ import os
 import pathlib
 from dotenv import load_dotenv
 
-from typing import Awaitable
-
 load_dotenv()
 OPENAI_API_KEY = os.getenv('LEPTON_API_KEY')
 LEPTON_API_BASE= os.getenv('LEPTON_API_BASE')
@@ -18,13 +19,14 @@ LEPTON_API_BASE= os.getenv('LEPTON_API_BASE')
 ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 
 from mizuscripts.s3 import store_multi as s3_store_multi
+from mizuscripts.s3 import get_multi as s3_get_multi
 from mizuscripts.types import Embedding
 
 def gen_data_path(file: str):
     return pathlib.PurePath(ROOT_DIR, "../data/" + file)
 
-client = chromadb.Client()
-collection = client.create_collection("domains")
+client = chromadb.PersistentClient(path=str(gen_data_path("chroma.db")))
+collection = client.get_or_create_collection("domains")
 def local_store_multi(embeddings: list[Embedding]):
     ids = [embedding.id for embedding in embeddings]
     docs = [embedding.text for embedding in embeddings]
@@ -37,13 +39,16 @@ async def query_embedding(sem: Semaphore, text: str, model: str = 'llama3-8b'):
     result = collection.query(query_embeddings=[e.embedding], n_results=2)
     print(result)
 
+def gen_embedding_id(text: str, model: str = 'llama3-8b') -> str:
+    return model + "/" + hashlib.sha256(text.encode()).hexdigest()
+
 async def gen_embedding(
     sem: Semaphore,
     text: str,
     model: str = 'llama3-8b'
 ) -> Embedding:
     async with sem:
-        id = hashlib.sha256(text.encode()).hexdigest() + "-" + model
+        id = gen_embedding_id(text, model)
         print("Generating embedding for {} with id {}".format(text, id))
         client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE)
         response = await client.embeddings.create(
@@ -65,6 +70,8 @@ def main():
     with open(gen_data_path("sample")) as f:
         domains = f.readlines()
         asyncio.run(gen_and_store_multi(sem, docs=domains))
+        embeddings = s3_get_multi([gen_embedding_id(domain) for domain in domains])
+        [print(json.dumps(asdict(embedding))) for embedding in embeddings]
     asyncio.run(query_embedding(sem, "geology_and_science"))
 
 if __name__ == '__main__':

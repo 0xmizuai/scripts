@@ -21,14 +21,33 @@ s3 = boto3.client('s3',
   aws_secret_access_key = AWS_SECRET_ACCESS_KEY
 )
 
-def store(e: Embedding):
+def gen_key(id: str) -> str:
+    return 'category_embedding/{}'.format(id)
+
+def store_obj(e: Embedding):
+    print("storing embedding with key {}".format(gen_key(e.id)))
     s3.upload_fileobj(
         json.dumps(asdict(e)),
         R2_BUCKET_NAME,
-        '/category_embedding/{}'.format(e.id)
+        gen_key(e.id)
     )
 
 def store_multi(es: list[Embedding], batch_size: int = 100):
     executor = futures.ThreadPoolExecutor(batch_size)
-    futures = [executor.submit(store, e) for e in es]
-    futures.wait(futures)
+    fs = [executor.submit(store_obj, e) for e in es]
+    futures.wait(fs)
+
+def get_obj(id: str) -> Embedding:
+    print("get embedding with key {}".format(gen_key(id)))
+    obj = s3.get_object(
+        Bucket = R2_BUCKET_NAME,
+        Key = gen_key(id)
+    )
+    return Embedding(**json.loads(obj['Body'].read().decode('utf-8')))
+
+def get_multi(ids: list[str], batch_size: int = 100) -> list[Embedding]:
+    # executor = futures.ThreadPoolExecutor(batch_size)
+    # fs = [executor.submit(get_obj, id) for id in ids]
+    # futures.wait(fs)
+    # return [f.result() for f in fs]
+    print(s3.list_objects_v2(Bucket = R2_BUCKET_NAME, Prefix = 'category_embedding/'))
