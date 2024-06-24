@@ -173,4 +173,4 @@ pyrightconfig.json
 
 .DS_Store
 
-data/chroma.db
+data/chroma

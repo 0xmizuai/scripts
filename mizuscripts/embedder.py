@@ -25,7 +25,7 @@ from mizuscripts.types import Embedding
 def gen_data_path(file: str):
     return pathlib.PurePath(ROOT_DIR, "../data/" + file)
 
-client = chromadb.PersistentClient(path=str(gen_data_path("chroma.db")))
+client = chromadb.PersistentClient(path=str(gen_data_path("chroma")))
 collection = client.get_or_create_collection("domains")
 def local_store(e: Embedding):
     collection.add(documents=[e.text], embeddings=[e.embedding], ids=[e.id])
