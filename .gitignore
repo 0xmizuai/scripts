@@ -174,3 +174,4 @@ pyrightconfig.json
 .DS_Store
 
 data/chroma
+data/chroma-test

@@ -8,7 +8,8 @@ import hashlib
 from openai import AsyncOpenAI
 
 import asyncio
-from asyncio import Semaphore, sleep
+from asyncio import Semaphore
+import threading
 
 import os
 import pathlib
@@ -17,6 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 OPENAI_API_KEY = os.getenv('LEPTON_API_KEY')
 LEPTON_API_BASE = os.getenv('LEPTON_API_BASE')
+TEST_FLAG = True if os.getenv('TEST_FLAG') == 'true' else False
 
 ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 BATCH_SIZE = 100
@@ -26,8 +28,10 @@ def gen_data_path(file: str):
     return pathlib.PurePath(ROOT_DIR, "../data/" + file)
 
 
-client = chromadb.PersistentClient(path=str(gen_data_path("chroma")))
-collection = client.get_or_create_collection("domains")
+DB_NAME = "chroma-test" if TEST_FLAG else "chroma"
+client = chromadb.PersistentClient(path=str(gen_data_path(DB_NAME)))
+COL_NAME = "domains-test" if TEST_FLAG else "domains"
+collection = client.get_or_create_collection(COL_NAME)
 
 
 def local_store(e: Embedding):
@@ -68,6 +72,15 @@ async def query_embedding(text: str, model: str = 'llama3-8b'):
     print("querying embedding for {} and get {}".format(text, result))
 
 q = queue.Queue(500000)
+MAX_QUEUED = 500
+
+
+async def enqueue_one(e: Embedding):
+    if q.qsize() > MAX_QUEUED:
+        await asyncio.sleep(3)
+        await enqueue_one(e)
+    else:
+        q.put(e)
 
 
 async def gen_embedding(
@@ -77,10 +90,17 @@ async def gen_embedding(
     model: str = 'llama3-8b'
 ) -> Embedding:
     async with sem:
-        if idx % 100 == 0:
-            print("processed {} domains...".format(idx))
+        if idx % BATCH_SIZE == 0:
+            print("generated embedding for {} domains...".format(idx))
         e = await gen_embedding_impl(text, model)
-        q.put(e)
+        await enqueue_one(e)
+
+
+async def gen_embeddings(sem: Semaphore, domains: list[str]):
+    tasks = [
+        asyncio.create_task(gen_embedding(sem, i, d)) for i, d in enumerate(domains)
+    ]
+    await asyncio.gather(*tasks)
 
 
 def dequeueAll(max=100) -> list[Embedding]:
@@ -91,8 +111,7 @@ def dequeueAll(max=100) -> list[Embedding]:
     return items
 
 
-async def process_embeddings(total: int):
-    print("processing embeddings...")
+def process_embeddings(total: int):
     while total > 0:
         items = dequeueAll()
         print("processing {} embeddings...".format(len(items)))
@@ -113,18 +132,18 @@ async def process_embeddings(total: int):
             )
         else:
             print("no item to process, sleeping for 3 seconds...")
-            await sleep(3)
+            time.sleep(3)
 
 
-async def run():
-    with open(gen_data_path("cleaned")) as f:
+def run():
+    file = "sample" if TEST_FLAG else "cleaned"
+    with open(gen_data_path(file)) as f:
         domains = f.read().splitlines()
-        tasks = [asyncio.create_task(process_embeddings(len(domains)))]
-        sem = Semaphore(100)
-        tasks += [
-            asyncio.create_task(gen_embedding(sem, i, d)) for i, d in enumerate(domains)
-        ]
-        await asyncio.gather(*tasks)
+        consumer = threading.Thread(
+            target=process_embeddings, args=[len(domains)])
+        consumer.start()
+        asyncio.run(gen_embeddings(Semaphore(100), domains))
+        consumer.join()
 
 
 async def test():
@@ -134,7 +153,7 @@ async def test():
 
 
 def main():
-    asyncio.run(test())
+    run()
 
 
 if __name__ == '__main__':

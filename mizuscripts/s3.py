@@ -13,6 +13,7 @@ R2_BASE_URL = os.getenv('R2_BASE_URL')
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME')
+TEST_FLAG = True if os.getenv('TEST_FLAG') == 'true' else False
 
 
 s3 = boto3.client('s3',
@@ -23,7 +24,10 @@ s3 = boto3.client('s3',
 
 
 def gen_key(id: str) -> str:
-    return 'category_embedding/{}'.format(id)
+    if TEST_FLAG:
+        return 'category_embedding_test/{}'.format(id)
+    else:
+        return 'category_embedding/{}'.format(id)
 
 
 def store_obj(e: Embedding):
