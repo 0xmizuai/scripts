@@ -7,4 +7,3 @@ load_dotenv()
 MONGO_DB_URL = os.getenv('MONGO_DB_URL')
 
 connect(MONGO_DB_URL)
-
