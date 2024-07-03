@@ -23,6 +23,7 @@ coverage = "^7.5.3"
 [tool.poetry.scripts]
 domain = "mizuscripts.domain_parser:main" # python script based task
 embedding = "mizuscripts.embedder:main" # python script based task
+cluster = "mizuscripts.clustering:main" # python script based task
 
 [build-system]
 requires = ["poetry-core"]
