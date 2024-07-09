@@ -162,8 +162,6 @@ def fetch_next(dir: str) -> str:
 def process(dir: str):
     next =  fetch_next(dir)
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b", verbose=False)
-    res = llm.invoke("hello")
-    print(res)
     agent = DomainAgent(llm=llm)
     with open(next, "r") as f:
         while True:
