@@ -14,7 +14,7 @@ COL_NAME = "domains-test" if TEST_FLAG else "domains"
 
 
 def gen_data_path(file: str):
-    return pathlib.PurePath(ROOT_DIR, "../data/" + file)
+    return pathlib.PurePath(ROOT_DIR) / ".." / "data" / file
 
 
 client = chromadb.PersistentClient(path=str(gen_data_path(DB_NAME)))
