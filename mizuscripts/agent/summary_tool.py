@@ -17,11 +17,14 @@ class SummaryTool(BaseTool):
         while True:
             try:
                 res = await self.llm.ainvoke(prompt % query)
+                if "{" not in res or "}" not in res:
+                    return res
                 start_index = res.find("{")
                 end_index = res.rfind("}")
                 summary = res[start_index:end_index + 1]
                 return json.loads(summary)["summary"]
-            except:
+            except Exception as e:
+                print(e)
                 continue
         # summary = json.loads(res)
         # return summary["summary"]
@@ -40,14 +43,18 @@ class SummaryTool(BaseTool):
         while True:
             try:
                 res = self.llm.invoke(prompt % query)
-                summary = json.loads(res)
+                if "{" not in res or "}" not in res:
+                    return res
+                start_index = res.find("{")
+                end_index = res.find("}")
+                summary = json.loads(res[start_index:end_index+1])
                 return summary["summary"]
             except:
                 continue
 
 prompt = """
-    <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-    As a language expert, please summary the given text: %s. Return the result in below format without any other text:
+    header_id|>
+    As a language expert, please summary the given text: %s to no more than 200 words. Return the result in below format without any other text:
     {
         "summary":  summary of the text
     }

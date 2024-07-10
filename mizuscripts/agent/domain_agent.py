@@ -13,13 +13,13 @@ class DomainAgent:
     BUFFER_SIZE = 500
 
     def __init__(self, llm):
-        prompt = PromptTemplate.from_template(template)
-        self.summary_tool = SummaryTool(llm=llm)
-        tools = [self.summary_tool]
-        agent = create_react_agent(llm, tools, prompt)
+        #prompt = PromptTemplate.from_template(template)
+        # self.summary_tool = SummaryTool(llm=llm)
+        # tools = [self.summary_tool]
+        # agent = create_react_agent(llm, tools, prompt)
 
         self.llm = llm
-        self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+        # self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
     def invoke(self, text: str) -> List[str]:
         while True:
