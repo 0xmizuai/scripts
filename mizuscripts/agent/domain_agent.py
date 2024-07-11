@@ -13,7 +13,7 @@ class DomainAgent:
     BUFFER_SIZE = 500
 
     def __init__(self, llm):
-        #prompt = PromptTemplate.from_template(template)
+        # prompt = PromptTemplate.from_template(template)
         # self.summary_tool = SummaryTool(llm=llm)
         # tools = [self.summary_tool]
         # agent = create_react_agent(llm, tools, prompt)
@@ -26,6 +26,18 @@ class DomainAgent:
             try:
                 # res = self.agent_executor.invoke({"text": text})["output"]
                 res = self.llm.invoke(short_promopt % text)
+                if "[" in res and "]" in res:
+                    start_index = res.find("[")
+                    end_index = res.rfind("]")
+                    return json.loads(res[start_index:end_index+1])
+            except:
+                continue
+
+    async def ainvoke(self, text: str) -> List[str]:
+        while True:
+            try:
+                # res = self.agent_executor.invoke({"text": text})["output"]
+                res = await self.llm.ainvoke(short_promopt % text)
                 if "[" in res and "]" in res:
                     start_index = res.find("[")
                     end_index = res.rfind("]")

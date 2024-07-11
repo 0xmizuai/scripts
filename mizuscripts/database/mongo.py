@@ -4,13 +4,16 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-client = MongoClient(os.getenv("MONGO_DB_URL"), tls=True)["mizu"]
+client = MongoClient(os.getenv("MONGO_DB_URL"))["mizu"]
 
 def get_clustering_collection():
     return client["clustering"]
 
 def get_domain_collection():
     return client["domain"]
+
+def get_domain_clustering_collection():
+    return client["domain_clustering"]
 
 def get_processed_collection():
     return client["processed"]

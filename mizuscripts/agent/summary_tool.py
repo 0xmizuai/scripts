@@ -54,7 +54,7 @@ prompt = """
     header_id|>
     As a language expert, please summary the given text: %s to no more than 200 words. Return the result in below format without any other text:
     {
-        "summary":  summary of the text
+        "summary":  "summary of the text"
     }
     <|start_header_id|>assistant<|end_header_id|>c:w
 
