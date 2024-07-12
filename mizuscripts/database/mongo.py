@@ -4,7 +4,6 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 connection_str = os.getenv("MONGO_DB_URL")
-# connection_str = "mongodb://dolmadmin:VcCKDDO74XQX2WM@127.0.0.1:27017"
 client = MongoClient(connection_str, tls=True, tlsAllowInvalidCertificates=True)["mizu"]
 
 def get_clustering_collection():
