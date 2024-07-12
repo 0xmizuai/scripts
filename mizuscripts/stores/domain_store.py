@@ -1,5 +1,6 @@
 import rich
 
+from rich.progress import Progress
 from langchain.pydantic_v1 import BaseModel
 from database.mongo import get_domain_collection
 from langchain_chroma import Chroma
@@ -7,6 +8,12 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional
+from utils import chunk
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 class DomainStore():
     THRESHOLD = 0.90
@@ -19,8 +26,17 @@ class DomainStore():
         splitter = RecursiveCharacterTextSplitter(chunk_size=1, chunk_overlap=0, separators=["\n\n"], keep_separator=False)
         if len(self.documents) == 0:
             return None
-        documents = splitter.create_documents([self.documents])
-        return Chroma.from_documents(splitter.split_documents(documents), OpenAIEmbeddings())
+        documents = list(chunks(splitter.create_documents([self.documents]), 10000))
+        chroma = None
+        with Progress() as progress:
+            task = progress.add_task("Constructing chroma database:", total=len(self.documents))
+            for document in documents:
+                if chroma is None:
+                    chroma = Chroma.from_documents(document, OpenAIEmbeddings())
+                else:
+                    chroma.add_documents(document)
+                progress.advance(task_id=task, advance=len(document))
+        return chroma
     
     def get_embeddings(self):
         return self.vector_store().get(include=["embeddings", "documents"])
