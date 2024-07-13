@@ -40,7 +40,7 @@ def cluster(documents:dict, n_clusters: int = 2000):
 def categorize(domains: List[str]) -> str:
     agent = DomainSummaryAgent()
     res = agent.invoke(domains)
-    print(f"Domains: {domains}, clustering: {res}")
+    # print(f"Domains: {domains}, clustering: {res}")
     return res
 
 

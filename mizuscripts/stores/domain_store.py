@@ -30,16 +30,16 @@ class DomainStore():
         documents = list(chunks(splits, 500))
         chroma = None
         done = 0
-        with Progress() as progress:
-            task = progress.add_task("Constructing chroma database:", total=len(self.documents))
-            for document in documents:
-                if chroma is None:
-                    chroma = Chroma.from_documents(document, OpenAIEmbeddings(model="text-embedding-3-small", dimensions=200))
-                else:
-                    chroma.add_documents(document)
-                done += len(document)
-                rich.print(f"{done}/{len(splits)}")
-                progress.advance(task_id=task, advance=len(document))
+        # with Progress() as progress:
+        # task = progress.add_task("Constructing chroma database:", total=len(self.documents))
+        for document in documents:
+            if chroma is None:
+                chroma = Chroma.from_documents(document, OpenAIEmbeddings(model="text-embedding-3-small", dimensions=175))
+            else:
+                chroma.add_documents(document)
+            done += len(document)
+            rich.print(f"{done}/{len(splits)}")
+            # progress.advance(task_id=task, advance=len(document))
         return chroma
     
     def get_embeddings(self):
