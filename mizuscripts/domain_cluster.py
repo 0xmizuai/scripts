@@ -1,3 +1,4 @@
+import rich
 from rich.progress import Progress
 from database.mongo import get_domain_collection, get_domain_clustering_collection
 from stores.domain_store import DomainStore
@@ -43,8 +44,9 @@ def categorize(domains: List[str]) -> str:
     return res
 
 
+total = 2000
 executor = ThreadPoolExecutor(100)
-groups = cluster(documents).values()
+groups = cluster(documents, total).values()
 
 res: Dict[str, List[str]] = {}
 index = 0
@@ -53,7 +55,9 @@ for data in executor.map(categorize, groups):
         res[data] = groups[index]
     else:
         res[data].extend(groups[index])
+    rich.print(f"{total} left")
     index += 1
+    total -= 1
 
 domain_clusterings = []
 for domain in res:

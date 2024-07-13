@@ -26,8 +26,10 @@ class DomainStore():
         splitter = RecursiveCharacterTextSplitter(chunk_size=1, chunk_overlap=0, separators=["\n\n"], keep_separator=False)
         if len(self.documents) == 0:
             return None
-        documents = list(chunks(splitter.create_documents([self.documents]), 500))
+        splits = splitter.create_documents([self.documents])
+        documents = list(chunks(splits, 500))
         chroma = None
+        done = 0
         with Progress() as progress:
             task = progress.add_task("Constructing chroma database:", total=len(self.documents))
             for document in documents:
@@ -35,6 +37,8 @@ class DomainStore():
                     chroma = Chroma.from_documents(document, OpenAIEmbeddings(model="text-embedding-3-small", dimensions=200))
                 else:
                     chroma.add_documents(document)
+                done += len(document)
+                rich.print(f"{done}/{len(splits)}")
                 progress.advance(task_id=task, advance=len(document))
         return chroma
     
