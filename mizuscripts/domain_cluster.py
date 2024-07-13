@@ -46,7 +46,7 @@ def categorize(domains: List[str]) -> str:
 
 total = 2000
 executor = ThreadPoolExecutor(100)
-groups = cluster(documents, total).values()
+groups = list(cluster(documents, total).values())
 
 res: Dict[str, List[str]] = {}
 index = 0
