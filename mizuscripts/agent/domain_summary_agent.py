@@ -24,6 +24,7 @@ class DomainSummaryAgent:
                     end_index = res.rfind("}")
                     return json.loads(res[start_index:end_index+1])["domain"]
             except:
+                
                 continue
         
 
