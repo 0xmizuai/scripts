@@ -6,6 +6,9 @@ from pymongo import MongoClient
 connection_str = os.getenv("MONGO_DB_URL")
 client = MongoClient(connection_str, tls=True, tlsAllowInvalidCertificates=True)["mizu"]
 
+def get_training_data_collection():
+    return client["training"]
+
 def get_clustering_collection():
     return client["clustering"]
 
