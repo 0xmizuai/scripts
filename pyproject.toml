@@ -33,6 +33,7 @@ coverage = "^7.5.3"
 embedding = "mizuscripts.embedder:main" # python script based task
 cluster = "mizuscripts.clustering:main" # python script based task
 domain = "mizuscripts.__main__:main" # python script based task
+pretrain = "mizuscripts.generate_training_data:main" # python script based task
 
 [build-system]
 requires = ["poetry-core"]

@@ -63,7 +63,7 @@ def gen_tb_traning_data():
 
     tokenizer = AutoTokenizer.from_pretrained()
     total_training_data = training_coll.count()
-    processed = 0
+    processed = tb_training_coll.count()
     with Progress() as progress:
         task = progress.add_task("Generating tinyBert training data:")
         while processed < total_training_data:
