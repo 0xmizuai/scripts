@@ -7,7 +7,6 @@ from sklearn.cluster import KMeans
 from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
-
 domain_collection = get_domain_collection()
 clustering_collection = get_domain_clustering_collection()
 total_domains = domain_collection.count_documents({})

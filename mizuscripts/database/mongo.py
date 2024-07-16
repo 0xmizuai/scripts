@@ -3,7 +3,10 @@ from mongoengine import *
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
+
+load_dotenv()
 connection_str = os.getenv("MONGO_DB_URL")
+
 client = MongoClient(connection_str, tls=True, tlsAllowInvalidCertificates=True)["mizu"]
 
 def get_training_data_collection():
@@ -24,6 +27,8 @@ def get_processed_collection():
 def get_processed_dolma_collection():
     return client["processed_dolma"]
 
+def get_tb_training_collection():
+    return client["tinybert_training"]
 
 def get_subdomain_collection():
     return client["subdomains"]
