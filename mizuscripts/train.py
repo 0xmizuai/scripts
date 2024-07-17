@@ -1,7 +1,8 @@
+import rich
 import os
 import json
 
-from transformers import AutoModel, AutoTokenizer, BertModel
+from transformers import AutoModel, AutoTokenizer, BertModel, BertConfig
 import torch
 from torch import nn
 from torch.optim import Adam
@@ -14,7 +15,7 @@ import numpy as np
 
 class MIZUClassifier(BertModel):
     def __init__(self, n_class) -> None:
-        super().__init__()
+        super().__init__(BertConfig())
         
         self.bert = AutoModel.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
         self.classifier = nn.Linear(312, n_class)
@@ -68,8 +69,10 @@ def get_batch(train_data, n_class, batch_size):
 
 def segmentation(corpus):
     # [(text, labels)]
+    corpus = [(data["text"], data["domains"]) for data in corpus]
+    rich.print("Start segmentation")
     
-    if os.path.exist('label_dict.json'):
+    if os.path.exists('label_dict.json'):
         label_to_id = json.load(open('label_dict.json'))
     else:
         label_set = set()
@@ -81,7 +84,7 @@ def segmentation(corpus):
         for l in label_set:
             if l not in label_to_id:
                 label_to_id[l] = len(label_to_id)
-        json.dump(label_to_id, open('label_dict.json', 'w'), ident=2)
+        json.dump(label_to_id, open('label_dict.json', 'w'), indent=2)
         
     train_data = []
     tokenizer = AutoTokenizer.from_pretrained('huawei-noah/TinyBERT_General_4L_312D')
@@ -106,7 +109,7 @@ def evaluate(test_data):
     p_list = []
     r_list = []
     f1_list = []
-    for batch in get_batch(test_data, n_class):
+    for batch in get_batch(test_data, n_class, 500):
         probs = model(batch, is_training=False)
         pred_labels = probs > 0.5 # [1, 3, 8, 9, 10]
         labels = batch['labels'] # [0, 3, 5, 8]
@@ -143,14 +146,15 @@ if __name__ == "__main__":
     model = MIZUClassifier(n_class=n_class)
     
     optimizer = Adam(model.parameters(), lr=3e-5)
-    data = get_training_data_collection.find()
+    data = get_training_data_collection().find()
+    rich.print("Data fetched")
     train_data = segmentation(data)
-    
+    rich.print("Training data fetched")
     
     best_f1 = 0
     step = 0
     for epoch in range(1):
-        for batch in get_batch(train_data, n_class):
+        for batch in get_batch(train_data, n_class, 500):
             loss = model(batch)
             
             loss.backward()
