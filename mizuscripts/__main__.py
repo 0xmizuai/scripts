@@ -65,7 +65,8 @@ async def get_summary(content: str) -> str:
         res = "".join(chunk_res)
     return res
 
-def categorize(content: str, store: DomainStore, agent: DomainAgent):
+def categorize(content: str, agent: DomainAgent):
+    store = DomainStore()
     content_hash = hash(content)
     processed_res = processed_collection.find_one({"hash": content_hash})
     if processed_res is not None:
@@ -109,7 +110,8 @@ def save(domains: List[str], content: str, summary: str, store: DomainStore):
     for domain in similar_domains:
         subdomains = similar_domains[domain]
         new_subdomains.extend([{"domain": domain, "subdomain": subdomain} for subdomain in subdomains])
-    similar_domain_collection.insert_many(new_subdomains)
+    if len(new_subdomains) > 0:
+        similar_domain_collection.insert_many(new_subdomains)
     content_domain = ContentDomains(raw_str=content, domains=domains_to_insert, summary=summary)
     content_id = clustering_collection.insert_one(content_domain.get_dict()).inserted_id
     domain_collection.insert_many([domain.get_dict() for domain in new_domains])
@@ -159,7 +161,6 @@ def fetch_next(dir: str) -> str:
 
 def process(dir: str):
     next =  fetch_next(dir)
-    domain_store = DomainStore()
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b", verbose=False)
     res = llm.invoke("hello")
     print(res)
@@ -170,7 +171,7 @@ def process(dir: str):
             if not record:
                 break
             text = json.loads(record)["text"]
-            categorize(text, domain_store, agent=agent)
+            categorize(text, agent=agent)
     
     collection = get_processed_dolma_collection()
     collection.insert_one({"id": next.split("/")[-1].split(".")[0]})
