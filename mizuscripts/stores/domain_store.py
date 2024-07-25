@@ -8,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional
 
 class DomainStore():
-    THRESHOLD = 0.95
+    THRESHOLD = 0.90
     documents: List[str]
     store: VectorStoreRetriever
 
@@ -20,10 +20,10 @@ class DomainStore():
     def vector_store(self) -> Chroma:
         splitter = RecursiveCharacterTextSplitter(chunk_size=1, chunk_overlap=0, separators=["\n\n"], keep_separator=False)
         documents = splitter.create_documents([self.documents])
-        return Chroma.from_documents(splitter.split_documents(documents), OpenAIEmbeddings()).as_retriever(search_type="similarity", similarity_score_threshold=DomainStore.THRESHOLD)
+        return Chroma.from_documents(splitter.split_documents(documents), OpenAIEmbeddings()).as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": DomainStore.THRESHOLD})
     
     def search(self, domain: str) -> Optional[str]:
-        documents = self.store.invoke(f"Similiar domain for: {domain}") 
+        documents = self.store.invoke(f"{domain}") 
         if len(documents) == 0:
             return None
         return documents[0].page_content

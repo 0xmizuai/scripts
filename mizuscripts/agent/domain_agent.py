@@ -18,17 +18,30 @@ class DomainAgent:
         tools = [self.summary_tool]
         agent = create_react_agent(llm, tools, prompt)
 
+        self.llm = llm
         self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
     def invoke(self, text: str) -> List[str]:
         while True:
-            res = self.agent_executor.invoke({"text": text})["output"]
+            # res = self.agent_executor.invoke({"text": text})["output"]
+            res = self.llm.invoke(short_promopt % text)
             if "[" in res and "]" in res:
                 start_index = res.find("[")
                 end_index = res.rfind("]")
                 return json.loads(res[start_index:end_index+1])
         
 
+short_promopt = """
+    <|begin_of_text|><|start_header_id|>user<|end_header_id|>
+    As a language expert, please figure out domains from the given text: %s. Return the result in below format without any other text:
+    [ 
+        "domain name 1",
+        "domain name 2",
+        ...
+    ]
+    <|start_header_id|>assistant<|end_header_id|>c:w
+
+"""
 
 
 template = """

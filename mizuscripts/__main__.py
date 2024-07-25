@@ -160,7 +160,9 @@ def fetch_next(dir: str) -> str:
 def process(dir: str):
     next =  fetch_next(dir)
     domain_store = DomainStore()
-    llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b-instruct", verbose=False)
+    llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b", verbose=False)
+    res = llm.invoke("hello")
+    print(res)
     agent = DomainAgent(llm=llm)
     with open(next, "r") as f:
         while True:
@@ -178,7 +180,8 @@ def process(dir: str):
 
 @click.command()
 @click.option("--dir", help="directory to store all binaries")
-def run(dir: str):
+def run(dir: str = "/Users/wangjunhong/tmp"):
+    dir = "/Users/wangjunhong/tmp"
     while True:
         collection = get_processed_dolma_collection()
         processed_count = len(list(collection.find()))
