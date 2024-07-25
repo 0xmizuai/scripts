@@ -23,12 +23,15 @@ class DomainAgent:
 
     def invoke(self, text: str) -> List[str]:
         while True:
-            # res = self.agent_executor.invoke({"text": text})["output"]
-            res = self.llm.invoke(short_promopt % text)
-            if "[" in res and "]" in res:
-                start_index = res.find("[")
-                end_index = res.rfind("]")
-                return json.loads(res[start_index:end_index+1])
+            try:
+                # res = self.agent_executor.invoke({"text": text})["output"]
+                res = self.llm.invoke(short_promopt % text)
+                if "[" in res and "]" in res:
+                    start_index = res.find("[")
+                    end_index = res.rfind("]")
+                    return json.loads(res[start_index:end_index+1])
+            except:
+                continue
         
 
 short_promopt = """
