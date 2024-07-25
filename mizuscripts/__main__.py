@@ -1,4 +1,8 @@
 import time
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+import threading
+import time
+from guppy import hpy
 import json
 import random
 from os.path import exists
@@ -18,6 +22,7 @@ from agent.domain_agent import DomainAgent
 from stores.domain_store import DomainStore
 from agent.summary_tool import SummaryTool
 from langchain_openai import OpenAI
+import threading
 from utils import chunk
 from pypdf import PdfReader 
 from multiprocessing.pool import ThreadPool
@@ -37,30 +42,28 @@ domain_collection = get_domain_collection()
 processed_collection = get_processed_collection()
 similar_domain_collection = get_subdomain_collection()
 
-def get_chunk_summary(content: str, index: int):
+def get_chunk_summary(content: str):
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b-instruct", timeout=10)
     tool = SummaryTool(llm=llm)
     start = datetime.now()
     # rich.print(f"Tool number: {index}, starts at: {start.strftime("%Y-%m-%d %H:%M:%S")}")
-    res = tool._run(content)
+    res = asyncio.run(tool._arun(content))
     end = datetime.now()
-    rich.print(f"Tool number: {index}, ends at: {end.strftime("%Y-%m-%d %H:%M:%S")}, duration: {(end - start).seconds}")
+    rich.print(f"Summary tool ends at: {end.strftime("%Y-%m-%d %H:%M:%S")}, duration: {(end - start).seconds}")
     # on_summary((res, index))
-    return (res, index)
+    return res
 
 async def get_summary(content: str) -> str:
     res = content
+    executor = ThreadPoolExecutor(max_workers=10)
     while len(res) >= DomainAgent.MAXIMAL_CONTEXT_SIZE:
-        pool = ThreadPool(30)
         chunks = chunk(res, DomainAgent.MAXIMAL_CONTEXT_SIZE // 2, DomainAgent.BUFFER_SIZE)
         chunk_res = [""] * len(chunks)
         def on_summary(result):
             chunk_res[result[1]] = result[0]
-        for i in range(len(chunks)):
-            pool.apply_async(get_chunk_summary, args=(chunks[i], i,), callback=on_summary)
-        pool.close()
-        pool.join()
-        res = "".join(chunk_res)
+        res = ""
+        for data in executor.map(get_chunk_summary, chunks):
+            res += data
     return res
 
 def categorize(content: str, agent: DomainAgent):
@@ -100,12 +103,12 @@ def save(domains: List[str], content: str, summary: str):
     #     similar_domain_collection.insert_many(similar_domains)
     
     # Finally log the data
-    rich.print(json.dumps({
-        "raw_str": content,
-        "summary": summary,
-        "domains": domains,
-        # "subdomains": similar_domains,
-    }, indent=2, default=list))
+    # rich.print(json.dumps({
+    #     "raw_str": content,
+    #     "summary": summary,
+    #     "domains": domains,
+    #     # "subdomains": similar_domains,
+    # }, indent=2, default=list))
 
 def download_and_extract(id: int, dir: str) -> str:
     name = str(id).zfill(4)
@@ -148,8 +151,10 @@ def process(dir: str):
     rich.print(f"Processing json: {next}")
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b", verbose=False)
     agent = DomainAgent(llm=llm)
-    pool = ThreadPool(100)
     random.seed(datetime.now().timestamp())
+    executor = ThreadPoolExecutor(max_workers=150)
+    executions = []
+    limit = 100
     with open(next, "r") as f:
         while True:
             record = f.readline()
@@ -158,13 +163,15 @@ def process(dir: str):
             if random.random() >= 0.2:
                 continue
             text = json.loads(record)["text"]
-            pool.apply_async(categorize, (text, agent,))
-    pool.close()
-    pool.join()
+            executions.append(executor.submit(categorize, text, agent))
+            if len(executions) >= limit:
+                wait(executions, return_when=ALL_COMPLETED)
+                executions = []
+
     collection = get_processed_dolma_collection()
     collection.insert_one({"id": next.split("/")[-1].split(".")[0]})
 
-    remove_file(next)
+    # remove_file(next)
 
 
 @click.command()

@@ -14,18 +14,16 @@ class SummaryTool(BaseTool):
             self, query: str, _:Optional[AsyncCallbackManagerForToolRun] = None
     ):
         # res = self.llm.invoke(f"As a language expert, please summary the given text: {query}. Return the result in format:").strip()
-        while True:
-            try:
-                res = await self.llm.ainvoke(prompt % query)
-                if "{" not in res or "}" not in res:
-                    return res
-                start_index = res.find("{")
-                end_index = res.rfind("}")
-                summary = res[start_index:end_index + 1]
-                return json.loads(summary)["summary"]
-            except Exception as e:
-                print(e)
-                continue
+        res = await self.llm.ainvoke(prompt % query)
+        if "{" not in res or "}" not in res:
+            return res
+        start_index = res.find("{")
+        end_index = res.rfind("}")
+        summary = res[start_index:end_index + 1]
+        try:
+            return json.loads(summary)["summary"]
+        except Exception as e:
+            return res
         # summary = json.loads(res)
         # return summary["summary"]
         # while True:
