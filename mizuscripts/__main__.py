@@ -1,5 +1,6 @@
 import time
 import json
+import random
 from os.path import exists
 from os import remove
 import requests
@@ -41,7 +42,7 @@ def get_chunk_summary(content: str, index: int):
     tool = SummaryTool(llm=llm)
     start = datetime.now()
     # rich.print(f"Tool number: {index}, starts at: {start.strftime("%Y-%m-%d %H:%M:%S")}")
-    res = asyncio.run(tool.ainvoke(content))
+    res = tool._run(content)
     end = datetime.now()
     rich.print(f"Tool number: {index}, ends at: {end.strftime("%Y-%m-%d %H:%M:%S")}, duration: {(end - start).seconds}")
     # on_summary((res, index))
@@ -51,17 +52,14 @@ async def get_summary(content: str) -> str:
     res = content
     while len(res) >= DomainAgent.MAXIMAL_CONTEXT_SIZE:
         pool = ThreadPool(30)
-        chunks = chunk(res, DomainAgent.MAXIMAL_CONTEXT_SIZE, DomainAgent.BUFFER_SIZE)
+        chunks = chunk(res, DomainAgent.MAXIMAL_CONTEXT_SIZE // 2, DomainAgent.BUFFER_SIZE)
         chunk_res = [""] * len(chunks)
-        with Progress() as progress:
-            task = progress.add_task(f"[cyan]Summarizing the original text({len(chunks)} chunks)", total=len(chunks))
-            def on_summary(result):
-                progress.update(task_id=task, advance=1)
-                chunk_res[result[1]] = result[0]
-            for i in range(len(chunks)):
-                pool.apply_async(get_chunk_summary, args=(chunks[i], i,), callback=on_summary)
-            pool.close()
-            pool.join()
+        def on_summary(result):
+            chunk_res[result[1]] = result[0]
+        for i in range(len(chunks)):
+            pool.apply_async(get_chunk_summary, args=(chunks[i], i,), callback=on_summary)
+        pool.close()
+        pool.join()
         res = "".join(chunk_res)
     return res
 
@@ -74,53 +72,39 @@ def categorize(content: str, agent: DomainAgent):
     else:
         rich.print(f"Processeing hash: {content_hash}")
 
-    store = DomainStore()
+    # store = DomainStore()
     summary = asyncio.run(get_summary(content))
     domains = agent.invoke(summary)
-    save(domains, content, summary, store)
+    save(domains, content, summary)
 
-def find_domain_from_sub(subdomain: str) -> str:
-    record = similar_domain_collection.find_one({"subdomain": subdomain})
-    if record is not None:
-        return record["domain"]
-    return None
+def save(domains: List[str], content: str, summary: str):
+    # First save content domains
+    content_domain = ContentDomains(raw_str=content, domains=domains, summary=summary)
+    content_id = clustering_collection.insert_one(content_domain.get_dict()).inserted_id
+    processed_collection.insert_one({"hash": hash(content_domain.raw_str), "content_id": content_id})
 
-def save(domains: List[str], content: str, summary: str, store: DomainStore):
+    # Next store new domains
     existing_domains = [domain.name for domain in Domain.get_existing_domains(domains)]
     new_domain_names = list(filter(lambda domain: domain not in existing_domains, domains))
-    new_domains: List[Domain] = []
-    for domain in new_domain_names:
-        parent_domain = find_domain_from_sub(domain) 
-        if parent_domain is not None:
-            existing_domains.append(parent_domain)
-        else:
-            new_domains.append(Domain(name=domain, repo_id=0))
-    similar_domains: Dict[str, Set[str]] = {}
-    domains_to_insert = set(existing_domains)
-    for domain in new_domains:
-        similar_domain = store.search(domain.name)
-        if similar_domain is not None:
-            if similar_domain not in similar_domains:
-                similar_domains[similar_domain] = set()
-            similar_domains[similar_domain].add(domain.name)
-            domains_to_insert.add(similar_domain) 
-        else:
-            domains_to_insert.add(domain.name)
-    new_subdomains = []
-    for domain in similar_domains:
-        subdomains = similar_domains[domain]
-        new_subdomains.extend([{"domain": domain, "subdomain": subdomain} for subdomain in subdomains])
-    if len(new_subdomains) > 0:
-        similar_domain_collection.insert_many(new_subdomains)
-    content_domain = ContentDomains(raw_str=content, domains=domains_to_insert, summary=summary)
-    content_id = clustering_collection.insert_one(content_domain.get_dict()).inserted_id
+    new_domains: List[Domain] = [Domain(name=domain, repo_id=0) for domain in new_domain_names]
     domain_collection.insert_many([domain.get_dict() for domain in new_domains])
-    processed_collection.insert_one({"hash": hash(content_domain.raw_str), "content_id": content_id})
+
+    # Third figure out the relationship between domains
+    # similar_domains: List[Dict] = []
+    # for domain in new_domains:
+    #     parent_domain = store.search(domain) 
+    #     if parent_domain is not None:
+    #         similar_domains.append({"domain": parent_domain, "subdomain": domain})
+    #         similar_domains[domain] = parent_domain
+    # if len(similar_domains) > 0:
+    #     similar_domain_collection.insert_many(similar_domains)
+    
+    # Finally log the data
     rich.print(json.dumps({
         "raw_str": content,
         "summary": summary,
-        "domains": list(domains_to_insert),
-        "subdomains": similar_domains,
+        "domains": domains,
+        # "subdomains": similar_domains,
     }, indent=2, default=list))
 
 def download_and_extract(id: int, dir: str) -> str:
@@ -161,20 +145,26 @@ def fetch_next(dir: str) -> str:
 
 def process(dir: str):
     next =  fetch_next(dir)
+    rich.print(f"Processing json: {next}")
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b", verbose=False)
     agent = DomainAgent(llm=llm)
+    pool = ThreadPool(100)
+    random.seed(datetime.now().timestamp())
     with open(next, "r") as f:
         while True:
             record = f.readline()
             if not record:
                 break
+            if random.random() >= 0.2:
+                continue
             text = json.loads(record)["text"]
-            categorize(text, agent=agent)
-    
+            pool.apply_async(categorize, (text, agent,))
+    pool.close()
+    pool.join()
     collection = get_processed_dolma_collection()
     collection.insert_one({"id": next.split("/")[-1].split(".")[0]})
 
-    clean_up(next, dir)
+    remove_file(next)
 
 
 @click.command()
