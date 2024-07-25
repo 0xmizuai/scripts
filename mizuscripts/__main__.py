@@ -181,7 +181,6 @@ def process(dir: str):
 @click.command()
 @click.option("--dir", help="directory to store all binaries")
 def run(dir: str = "/Users/wangjunhong/tmp"):
-    dir = "/Users/wangjunhong/tmp"
     while True:
         collection = get_processed_dolma_collection()
         processed_count = len(list(collection.find()))
