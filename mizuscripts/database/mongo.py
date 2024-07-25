@@ -1,0 +1,23 @@
+from mongoengine import *
+
+import os
+from dotenv import load_dotenv
+from pymongo import MongoClient
+
+client = MongoClient(os.getenv("MONGO_DB_URL"))["mizu"]
+
+def get_clustering_collection():
+    return client["clustering"]
+
+def get_domain_collection():
+    return client["domain"]
+
+def get_processed_collection():
+    return client["processed"]
+
+def get_processed_dolma_collection():
+    return client["processed_dolma"]
+
+
+def get_subdomain_collection():
+    return client["subdomains"]
