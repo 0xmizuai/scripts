@@ -36,7 +36,8 @@ class DomainAgent:
 
 short_promopt = """
     <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-    As a language expert, please figure out domains from the given text: %s. A domain should be a nounce that covers meaning of at least 25% of the paragraph. 
+    As a language expert, please figure out domains from the given text: %s. 
+    A domain should covers at least 25 percent of what the paragraph given is talking about. 
     Return at most top 5 related domain in below format without any other text:
     [ 
         "domain name 1",
