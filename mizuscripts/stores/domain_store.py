@@ -8,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional
 
 class DomainStore():
-    THRESHOLD = 0.80
+    THRESHOLD = 0.90
     documents: List[str]
     store: VectorStoreRetriever
 
