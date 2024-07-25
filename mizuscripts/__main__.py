@@ -66,7 +66,6 @@ async def get_summary(content: str) -> str:
     return res
 
 def categorize(content: str, agent: DomainAgent):
-    store = DomainStore()
     content_hash = hash(content)
     processed_res = processed_collection.find_one({"hash": content_hash})
     if processed_res is not None:
@@ -75,6 +74,7 @@ def categorize(content: str, agent: DomainAgent):
     else:
         rich.print(f"Processeing hash: {content_hash}")
 
+    store = DomainStore()
     summary = asyncio.run(get_summary(content))
     domains = agent.invoke(summary)
     save(domains, content, summary, store)
