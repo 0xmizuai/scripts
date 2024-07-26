@@ -1,8 +1,4 @@
-import time
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
-import threading
-import time
-from guppy import hpy
 import json
 import random
 from os.path import exists
@@ -11,36 +7,34 @@ import requests
 import rich
 import click
 from datetime import datetime
-import gzip
 import asyncio
 import os
-from typing import List, Set, Dict
+from typing import List
 from sh import gunzip
+from transformers import AutoTokenizer
+from huggingface_hub import login
 
 import rich.progress
 from agent.domain_agent import DomainAgent
-from stores.domain_store import DomainStore
 from agent.summary_tool import SummaryTool
 from langchain_openai import OpenAI
-import threading
 from utils import chunk
-from pypdf import PdfReader 
-from multiprocessing.pool import ThreadPool
-from pathlib import Path
 from model.content import ContentDomains
 from model.domain import Domain
 from database.mongo import get_clustering_collection, get_domain_collection, get_processed_collection, get_processed_dolma_collection, get_subdomain_collection
 from rich.progress import Progress
 from util.string import hash
-from langchain_chroma import Chroma
 
 OPENAI_API_KEY = os.getenv('LEPTON_API_KEY')
 LEPTON_API_BASE = os.getenv('LEPTON_API_BASE')
+
+login(token = os.getenv('HUGGING_FACE_TOKEN'))
 
 clustering_collection = get_clustering_collection()
 domain_collection = get_domain_collection()
 processed_collection = get_processed_collection()
 similar_domain_collection = get_subdomain_collection()
+tokenizer = AutoTokenizer.from_pretrained('meta-llama/Meta-Llama-3-8B')
 
 def get_chunk_summary(content: str):
     llm = OpenAI(api_key=OPENAI_API_KEY, base_url=LEPTON_API_BASE, model="llama3-8b-instruct", timeout=10)
@@ -49,14 +43,15 @@ def get_chunk_summary(content: str):
     # rich.print(f"Tool number: {index}, starts at: {start.strftime("%Y-%m-%d %H:%M:%S")}")
     res = asyncio.run(tool._arun(content))
     end = datetime.now()
-    rich.print(f"Summary tool ends at: {end.strftime("%Y-%m-%d %H:%M:%S")}, duration: {(end - start).seconds}")
+    rich.print(f"Summary tool ends at: {end.strftime('%Y-%m-%d %H:%M:%S')}, duration: {(end - start).seconds}")
     # on_summary((res, index))
     return res
 
 async def get_summary(content: str) -> str:
     res = content
     executor = ThreadPoolExecutor(max_workers=10)
-    while len(res) >= DomainAgent.MAXIMAL_CONTEXT_SIZE:
+    tokenized_text = tokenizer.tokenize(content)
+    while len(tokenized_text) >= DomainAgent.MAXIMAL_CONTEXT_SIZE:
         chunks = chunk(res, DomainAgent.MAXIMAL_CONTEXT_SIZE // 2, DomainAgent.BUFFER_SIZE)
         chunk_res = [""] * len(chunks)
         def on_summary(result):
@@ -64,6 +59,7 @@ async def get_summary(content: str) -> str:
         res = ""
         for data in executor.map(get_chunk_summary, chunks):
             res += data
+        tokenized_text = tokenizer.tokenize(res)
     return res
 
 def categorize(content: str, agent: DomainAgent):
@@ -162,6 +158,8 @@ def process(dir: str):
                 break
             if random.random() >= 0.2:
                 continue
+            if processed_collection.count_documents({}) >= 125000:
+                exit(0)
             text = json.loads(record)["text"]
             executions.append(executor.submit(categorize, text, agent))
             if len(executions) >= limit:
